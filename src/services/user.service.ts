@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { User } from '../models';
 import { AppError } from '../middlewares/error-handler';
 
@@ -21,9 +22,11 @@ export class UserService {
    * 创建用户（注册）
    */
   async create(data: CreateUserInput): Promise<User> {
-    // v1 版本：明文存储密码（v2 引入 bcrypt）
+    // bcrypt 哈希密码（成本因子 10）
+    const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = await User.create({
       ...data,
+      password: hashedPassword,
       status: 1,
     } as any);
 
@@ -48,6 +51,13 @@ export class UserService {
    */
   async findByUsername(username: string): Promise<User | null> {
     return User.findOne({ where: { username } });
+  }
+
+  /**
+   * 校验用户密码
+   */
+  async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hashedPassword);
   }
 
   /**
