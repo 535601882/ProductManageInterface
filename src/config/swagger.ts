@@ -79,6 +79,30 @@ const options: swaggerJsdoc.Options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        // 角色模型
+        Role: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: '管理员' },
+            description: { type: 'string', example: '拥有所有权限' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        // 权限模型
+        Permission: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: '创建商品' },
+            resource: { type: 'string', example: 'product' },
+            action: { type: 'string', example: 'create' },
+            description: { type: 'string', example: '允许创建新商品' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
       },
     },
   },
