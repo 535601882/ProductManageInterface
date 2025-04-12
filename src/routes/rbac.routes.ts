@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   rbacController,
   createRoleSchema,
+  updateRoleSchema,
   createPermissionSchema,
   assignPermissionsSchema,
   assignRolesSchema,
@@ -14,7 +15,7 @@ const router = Router();
 router.post('/roles', validate(createRoleSchema, 'body'), rbacController.createRole);
 router.get('/roles', rbacController.findAllRoles);
 router.get('/roles/:id', rbacController.findRoleById);
-router.put('/roles/:id', rbacController.updateRole);
+router.put('/roles/:id', validate(updateRoleSchema, 'body'), rbacController.updateRole);
 router.delete('/roles/:id', rbacController.deleteRole);
 
 // 为角色分配权限

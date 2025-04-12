@@ -4,6 +4,7 @@ import { AppError } from '../middlewares/error-handler';
 export interface CreateRoleInput {
   name: string;
   description?: string;
+  permissionIds?: number[];
 }
 
 export interface CreatePermissionInput {
@@ -17,7 +18,20 @@ export class RbacService {
   // ==================== 角色管理 ====================
 
   async createRole(data: CreateRoleInput): Promise<Role> {
-    return Role.create(data as any);
+    const { permissionIds, ...roleData } = data;
+
+    const role = await Role.create(roleData as any);
+
+    // 如果有权限列表，一并绑定
+    if (permissionIds && permissionIds.length > 0) {
+      const records = permissionIds.map((permissionId) => ({
+        roleId: role.id,
+        permissionId,
+      }));
+      await RolePermission.bulkCreate(records as any);
+    }
+
+    return this.findRoleById(role.id) as Promise<Role>;
   }
 
   async findAllRoles(): Promise<Role[]> {
@@ -45,10 +59,27 @@ export class RbacService {
   }
 
   async updateRole(id: number, data: Partial<CreateRoleInput>): Promise<Role | null> {
+    const { permissionIds, ...roleData } = data;
+
     const role = await Role.findByPk(id);
     if (!role) throw new AppError('角色不存在', 404, 404);
-    await role.update(data);
-    return role;
+
+    // 更新角色字段
+    await role.update(roleData);
+
+    // 如果传了权限列表，全量覆盖绑定
+    if (permissionIds !== undefined) {
+      await RolePermission.destroy({ where: { roleId: id } });
+      if (permissionIds.length > 0) {
+        const records = permissionIds.map((permissionId) => ({
+          roleId: id,
+          permissionId,
+        }));
+        await RolePermission.bulkCreate(records as any);
+      }
+    }
+
+    return this.findRoleById(id);
   }
 
   async deleteRole(id: number): Promise<void> {

@@ -6,6 +6,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from '../utils/jwt';
+import { rbacService } from '../services/rbac.service';
 import Joi from 'joi';
 
 // 注册校验规则
@@ -114,8 +115,12 @@ export class AuthController {
       const userInfo = user.toJSON();
       delete (userInfo as any).password;
 
+      // 查询用户权限列表（供前端做路由/菜单过滤）
+      const permissions = await rbacService.getUserPermissions(user.id);
+
       success(res, {
         user: userInfo,
+        permissions,
         accessToken,
         refreshToken,
         expiresIn: 3600, // 1小时，单位秒

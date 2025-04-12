@@ -8,7 +8,10 @@ import {
   AllowNull,
   Unique,
   Default,
+  BelongsToMany,
 } from 'sequelize-typescript';
+import { Role } from './role.model';
+import { UserRole } from './user-role.model';
 
 @Table({
   tableName: 'users',
@@ -49,4 +52,7 @@ export class User extends Model<User> {
   @AllowNull(true)
   @Column(DataType.STRING(255))
   avatar!: string;
+
+  @BelongsToMany(() => Role, () => UserRole)
+  roles!: Role[];
 }

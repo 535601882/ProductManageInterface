@@ -9,6 +9,7 @@ import { validate } from '../middlewares/validate';
 import { Request, Response } from 'express';
 import { success, error } from '../utils/response';
 import { userService } from '../services/user.service';
+import { rbacService } from '../services/rbac.service';
 
 const router = Router();
 
@@ -33,7 +34,14 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       error(res, '用户不存在', 404, 404);
       return;
     }
-    success(res, user);
+
+    // 查询用户权限列表（供前端做路由/菜单过滤）
+    const permissions = await rbacService.getUserPermissions(userId);
+
+    success(res, {
+      ...user.toJSON(),
+      permissions,
+    });
   } catch (err) {
     error(res, '获取用户信息失败', 500, 500);
   }
