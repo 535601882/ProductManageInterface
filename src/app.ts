@@ -5,6 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env';
 import { sequelize, testConnection, dbConnected } from './config/database';
+import { testRedisConnection } from './config/redis';
 import { swaggerSpec } from './config/swagger';
 import { logger } from './utils/logger';
 import { errorHandler, notFoundHandler, AppError } from './middlewares/error-handler';
@@ -74,6 +75,9 @@ app.use(errorHandler);
 const PORT = env.PORT;
 
 async function startServer(): Promise<void> {
+  // 测试 Redis 连接（失败不阻断，优雅降级）
+  await testRedisConnection();
+
   // 测试数据库连接（失败不退出，继续启动）
   const connected = await testConnection();
 
