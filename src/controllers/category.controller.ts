@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { categoryService } from '../services/category.service';
+import { cacheService } from '../services/cache.service';
 import { success, error } from '../utils/response';
 import Joi from 'joi';
 
@@ -44,6 +45,7 @@ export class CategoryController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const category = await categoryService.create(req.body);
+      await cacheService.delPattern('category:*');
       success(res, category, '创建成功', 201);
     } catch (err) {
       next(err);
@@ -62,7 +64,11 @@ export class CategoryController {
    */
   async findAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const categories = await categoryService.findAll();
+      const categories = await cacheService.getOrSet(
+        'category:list',
+        async () => categoryService.findAll(),
+        600 // 分类列表缓存 10 分钟
+      );
       success(res, categories);
     } catch (err) {
       next(err);
@@ -87,7 +93,18 @@ export class CategoryController {
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const category = await categoryService.findById(id);
+      const cacheKey = `category:detail:${id}`;
+
+      const category = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          const c = await categoryService.findById(id);
+          return c ? c.toJSON() : null;
+        },
+        600,
+        { cacheNull: true }
+      );
+
       if (!category) {
         error(res, '分类不存在', 404, 404);
         return;
@@ -126,6 +143,8 @@ export class CategoryController {
     try {
       const id = parseInt(req.params.id);
       const category = await categoryService.update(id, req.body);
+      await cacheService.del(`category:detail:${id}`);
+      await cacheService.del('category:list');
       success(res, category, '更新成功');
     } catch (err) {
       next(err);
@@ -151,6 +170,8 @@ export class CategoryController {
     try {
       const id = parseInt(req.params.id);
       await categoryService.delete(id);
+      await cacheService.del(`category:detail:${id}`);
+      await cacheService.del('category:list');
       success(res, null, '删除成功');
     } catch (err) {
       next(err);

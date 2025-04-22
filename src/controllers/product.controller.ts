@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { productService } from '../services/product.service';
+import { cacheService } from '../services/cache.service';
 import { success, error, paginate } from '../utils/response';
 import Joi from 'joi';
 
@@ -57,6 +58,8 @@ export class ProductController {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const product = await productService.create(req.body);
+      // 写操作清除列表缓存
+      await cacheService.delPattern('product:list:*');
       success(res, product, '创建成功', 201);
     } catch (err) {
       next(err);
@@ -97,12 +100,30 @@ export class ProductController {
       const keyword = req.query.keyword as string | undefined;
       const status = req.query.status !== undefined ? parseInt(req.query.status as string) : undefined;
 
-      const { rows, count } = await productService.findAll(page, pageSize, {
-        categoryId,
-        keyword,
-        status,
-      });
-      paginate(res, rows, { page, pageSize, total: count });
+      const cacheKey = `product:list:${page}:${pageSize}:${categoryId || ''}:${keyword || ''}:${status || ''}`;
+
+      const cached = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          const { rows, count } = await productService.findAll(page, pageSize, {
+            categoryId,
+            keyword,
+            status,
+          });
+          return {
+            list: rows,
+            pagination: {
+              page,
+              pageSize,
+              total: count,
+              totalPages: Math.ceil(count / pageSize),
+            },
+          };
+        },
+        300 // 列表缓存 5 分钟
+      );
+
+      success(res, cached);
     } catch (err) {
       next(err);
     }
@@ -126,7 +147,18 @@ export class ProductController {
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const product = await productService.findById(id);
+      const cacheKey = `product:detail:${id}`;
+
+      const product = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          const p = await productService.findById(id);
+          return p ? p.toJSON() : null;
+        },
+        600, // 详情缓存 10 分钟
+        { cacheNull: true } // 防止缓存穿透
+      );
+
       if (!product) {
         error(res, '商品不存在', 404, 404);
         return;
@@ -169,6 +201,9 @@ export class ProductController {
     try {
       const id = parseInt(req.params.id);
       const product = await productService.update(id, req.body);
+      // 写操作清除相关缓存
+      await cacheService.del(`product:detail:${id}`);
+      await cacheService.delPattern('product:list:*');
       success(res, product, '更新成功');
     } catch (err) {
       next(err);
@@ -194,6 +229,9 @@ export class ProductController {
     try {
       const id = parseInt(req.params.id);
       await productService.delete(id);
+      // 写操作清除相关缓存
+      await cacheService.del(`product:detail:${id}`);
+      await cacheService.delPattern('product:list:*');
       success(res, null, '删除成功');
     } catch (err) {
       next(err);
