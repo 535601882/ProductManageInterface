@@ -9,6 +9,7 @@ import {
   Default,
   ForeignKey,
   BelongsTo,
+  Version,
 } from 'sequelize-typescript';
 import { Category } from './category.model';
 
@@ -65,4 +66,8 @@ export class Product extends Model<Product> {
   @AllowNull(true)
   @Column(DataType.STRING(500))
   images!: string;
+
+  @Version
+  @Column(DataType.INTEGER)
+  version!: number;
 }
