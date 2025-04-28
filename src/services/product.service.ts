@@ -1,5 +1,6 @@
 import { Product, Category } from '../models';
 import { AppError } from '../middlewares/error-handler';
+import { OptimisticLockError } from 'sequelize';
 
 export interface CreateProductInput {
   name: string;
@@ -91,7 +92,15 @@ export class ProductService {
       throw new AppError('商品不存在', 404, 404);
     }
 
-    await product.update(data);
+    try {
+      await product.update(data);
+    } catch (err) {
+      if (err instanceof OptimisticLockError) {
+        throw new AppError('商品信息已被其他用户修改，请刷新后重试', 409, 409);
+      }
+      throw err;
+    }
+
     return product;
   }
 
