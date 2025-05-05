@@ -9,13 +9,8 @@ import { Product } from './product.model';
 import { Order } from './order.model';
 import { OrderItem } from './order-item.model';
 
-// 注册所有模型
+// 注册所有模型（关联通过装饰器自动建立）
 sequelize.addModels([User, Role, Permission, UserRole, RolePermission, Category, Product, Order, OrderItem]);
-
-// 建立模型关联
-Order.hasMany(OrderItem, { as: 'items', foreignKey: 'orderId' });
-OrderItem.belongsTo(Order, { as: 'order', foreignKey: 'orderId' });
-OrderItem.belongsTo(Product, { as: 'product', foreignKey: 'productId' });
 
 export {
   sequelize,

@@ -52,6 +52,6 @@ export class Order extends Model<Order> {
   @BelongsTo(() => User)
   user!: User;
 
-  @HasMany(() => OrderItem)
+  @HasMany(() => OrderItem, { as: 'items', foreignKey: 'orderId' })
   items!: OrderItem[];
 }

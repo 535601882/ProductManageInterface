@@ -9,13 +9,13 @@ import {
   Default,
   ForeignKey,
   BelongsTo,
-  Version,
 } from 'sequelize-typescript';
 import { Category } from './category.model';
 
 @Table({
   tableName: 'products',
   comment: '商品表',
+  version: true, // 启用乐观锁，自动添加 version 字段
 })
 export class Product extends Model<Product> {
   @PrimaryKey
@@ -66,8 +66,4 @@ export class Product extends Model<Product> {
   @AllowNull(true)
   @Column(DataType.STRING(500))
   images!: string;
-
-  @Version
-  @Column(DataType.INTEGER)
-  version!: number;
 }

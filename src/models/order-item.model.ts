@@ -6,6 +6,7 @@ import {
   PrimaryKey,
   AutoIncrement,
   AllowNull,
+  Default,
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
@@ -58,9 +59,9 @@ export class OrderItem extends Model<OrderItem> {
   })
   subtotal!: number;
 
-  @BelongsTo(() => Order)
+  @BelongsTo(() => Order, { as: 'order', foreignKey: 'orderId' })
   order!: Order;
 
-  @BelongsTo(() => Product)
+  @BelongsTo(() => Product, { as: 'product', foreignKey: 'productId' })
   product!: Product;
 }

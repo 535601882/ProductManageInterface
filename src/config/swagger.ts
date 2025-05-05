@@ -103,6 +103,33 @@ const options: swaggerJsdoc.Options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        // 订单模型
+        Order: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            userId: { type: 'integer', example: 1 },
+            totalAmount: { type: 'number', example: 1999.0 },
+            status: { type: 'integer', example: 0, description: '0-待支付 1-已支付 2-已取消' },
+            address: { type: 'string', example: '北京市朝阳区xxx街道' },
+            items: { type: 'array', items: { $ref: '#/components/schemas/OrderItem' } },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        // 订单商品模型
+        OrderItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            orderId: { type: 'integer', example: 1 },
+            productId: { type: 'integer', example: 1 },
+            productName: { type: 'string', example: 'iPhone 15 Pro' },
+            price: { type: 'number', example: 7999.0 },
+            quantity: { type: 'integer', example: 1 },
+            subtotal: { type: 'number', example: 7999.0 },
+          },
+        },
       },
     },
   },
