@@ -140,6 +140,47 @@ export class OrderService {
     await order.update({ status: 1 }); // 已支付
     return order;
   }
+
+  /**
+   * 取消订单（恢复库存）
+   * 用于：用户主动取消 / 定时任务超时自动取消
+   */
+  async cancelOrder(orderId: number): Promise<Order> {
+    const order = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem, as: 'items' }],
+    });
+
+    if (!order) {
+      throw new AppError('订单不存在', 404, 404);
+    }
+
+    if (order.status !== 0) {
+      throw new AppError('订单状态不允许取消', 400, 400);
+    }
+
+    try {
+      await sequelize.transaction(async (t) => {
+        // 1. 恢复库存
+        for (const item of (order as any).items || []) {
+          const product = await Product.findByPk(item.productId, { transaction: t });
+          if (product) {
+            product.stock += item.quantity;
+            await product.save({ transaction: t });
+          }
+        }
+
+        // 2. 更新订单状态为已取消
+        await order.update({ status: 2 }, { transaction: t });
+      });
+
+      return order;
+    } catch (err) {
+      if (err instanceof OptimisticLockError) {
+        throw new AppError('商品信息已被修改，取消失败', 409, 409);
+      }
+      throw err;
+    }
+  }
 }
 
 export const orderService = new OrderService();
