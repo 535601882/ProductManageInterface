@@ -9,6 +9,7 @@ import { testRedisConnection } from './config/redis';
 import { swaggerSpec } from './config/swagger';
 import { logger } from './utils/logger';
 import { errorHandler, notFoundHandler, AppError } from './middlewares/error-handler';
+import { startAllJobs } from './jobs/scheduler';
 
 // 导入模型（触发 addModels）
 import './models';
@@ -98,6 +99,11 @@ async function startServer(): Promise<void> {
       logger.info('💡 启动 MySQL 后接口即可使用：docker-compose up -d mysql');
     }
   });
+
+  // 数据库连接成功后启动定时任务
+  if (connected) {
+    startAllJobs();
+  }
 }
 
 startServer();

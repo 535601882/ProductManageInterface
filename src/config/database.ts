@@ -11,6 +11,7 @@ export const sequelize = new Sequelize({
   host: env.DB_HOST,
   port: env.DB_PORT,
   dialect: 'mysql',
+  timezone: '+08:00',
   logging: env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
   pool: {
     max: 10,
