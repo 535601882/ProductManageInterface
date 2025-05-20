@@ -2,6 +2,7 @@ import { Product, Order, OrderItem } from '../models';
 import { sequelize } from '../config/database';
 import { AppError } from '../middlewares/error-handler';
 import { OptimisticLockError } from 'sequelize';
+import { eventBus } from '../events/event-bus';
 
 export interface OrderItemInput {
   productId: number;
@@ -86,7 +87,21 @@ export class OrderService {
       });
 
       // 事务成功后返回完整订单（含 items）
-      return this.findById(order.id, userId) as Promise<Order>;
+      const result = await this.findById(order.id, userId) as Order;
+
+      // 发布订单创建事件（异步通知消费者）
+      eventBus.publish('order:created', {
+        userId,
+        orderId: order.id,
+        totalAmount: order.totalAmount,
+        items: (result as any).items?.map((item: any) => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+        })) || [],
+      });
+
+      return result;
     } catch (err) {
       // 乐观锁冲突时给用户友好的提示
       if (err instanceof OptimisticLockError) {

@@ -10,6 +10,7 @@ import { swaggerSpec } from './config/swagger';
 import { logger } from './utils/logger';
 import { errorHandler, notFoundHandler, AppError } from './middlewares/error-handler';
 import { startAllJobs } from './jobs/scheduler';
+import { registerOrderCreatedListeners } from './events/order-created.listener';
 
 // 导入模型（触发 addModels）
 import './models';
@@ -100,9 +101,10 @@ async function startServer(): Promise<void> {
     }
   });
 
-  // 数据库连接成功后启动定时任务
+  // 数据库连接成功后启动定时任务和事件监听
   if (connected) {
     startAllJobs();
+    registerOrderCreatedListeners();
   }
 }
 
