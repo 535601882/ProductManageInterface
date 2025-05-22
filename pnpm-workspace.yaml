@@ -1,2 +1,3 @@
 allowBuilds:
   '@scarf/scarf': true
+  msgpackr-extract: set this to true or false
