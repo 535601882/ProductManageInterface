@@ -11,6 +11,7 @@ import { logger } from './utils/logger';
 import { errorHandler, notFoundHandler, AppError } from './middlewares/error-handler';
 import { startAllJobs } from './jobs/scheduler';
 import { registerOrderCreatedListeners } from './events/order-created.listener';
+import { registerOrderProcessors } from './queues/order.processor';
 
 // 导入模型（触发 addModels）
 import './models';
@@ -105,6 +106,7 @@ async function startServer(): Promise<void> {
   if (connected) {
     startAllJobs();
     registerOrderCreatedListeners();
+    registerOrderProcessors();
   }
 }
 

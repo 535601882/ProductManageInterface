@@ -3,6 +3,8 @@ import { sequelize } from '../config/database';
 import { AppError } from '../middlewares/error-handler';
 import { OptimisticLockError } from 'sequelize';
 import { eventBus } from '../events/event-bus';
+import { orderQueue } from '../queues/order.queue';
+import { redisConnected } from '../config/redis';
 
 export interface OrderItemInput {
   productId: number;
@@ -89,8 +91,8 @@ export class OrderService {
       // 事务成功后返回完整订单（含 items）
       const result = await this.findById(order.id, userId) as Order;
 
-      // 发布订单创建事件（异步通知消费者）
-      eventBus.publish('order:created', {
+      // 构建事件数据
+      const eventData = {
         userId,
         orderId: order.id,
         totalAmount: order.totalAmount,
@@ -99,7 +101,16 @@ export class OrderService {
           productName: item.productName,
           quantity: item.quantity,
         })) || [],
-      });
+      };
+
+      if (redisConnected) {
+        // MQ 模式：任务入队，持久化到 Redis
+        await orderQueue.add('notify', eventData, { attempts: 3, backoff: 5000 });
+        await orderQueue.add('stats', eventData, { attempts: 3, backoff: 5000 });
+      } else {
+        // 降级模式：无 Redis 时回退到内存 EventBus
+        eventBus.publish('order:created', eventData);
+      }
 
       return result;
     } catch (err) {
